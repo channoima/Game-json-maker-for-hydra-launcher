@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ajouter un jeu</title>
+</head>
+<body>
+    <h1>Ajouter un nouveau jeu</h1>
+    <form method="post">
+        Nom du jeu : <input type="text" name="title" required><br>
+        Lien de téléchargement : <input type="url" name="lien" required><br>
+        Taille du fichier : <input type="text" name="taille" placeholder="ex: 500MB" required><br>
+        <button type="submit">Ajouter</button>
+    </form>
+    <a href="{{ url_for('index') }}">← Retour</a>
+</body>
+</html>
