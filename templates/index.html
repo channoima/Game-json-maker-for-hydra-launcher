@@ -2,87 +2,212 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>{{ source_name }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { padding: 2rem; background-color: #f9f9f9; }
-        .game-card { box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
-        .game-img { width: 100%; height: 200px; object-fit: cover; }
-        form.m-0 { margin: 0; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionnaire de Jeux</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <h1 class="mb-4 text-center">{{ source_name }}</h1>
-
-    <!-- Formulaire modifier nom bibliothèque -->
-    <form method="post" action="{{ url_for('modifier_nom') }}" class="mb-4 d-flex">
-      <input type="text" class="form-control me-2" name="nouveau_nom" value="{{ source_name }}" required>
-      <button type="submit" class="btn btn-primary">Modifier le nom</button>
-    </form>
-
-    <!-- Barre de recherche -->
-    <form method="get" action="{{ url_for('index') }}" class="mb-4 d-flex">
-      <input type="text" name="q" class="form-control me-2" placeholder="Rechercher un jeu..." value="{{ recherche }}">
-      <button type="submit" class="btn btn-outline-secondary">Rechercher</button>
-    </form>
-
-    <!-- Bouton ajouter un jeu -->
-    <div class="mb-3">
-      <a href="{{ url_for('ajouter') }}" class="btn btn-success">➕ Ajouter un nouveau jeu</a>
-    </div>
-
-    <!-- Liste des jeux -->
-    <div class="row">
-      {% for jeu in jeux %}
-        <div class="col-md-4">
-          <div class="card game-card">
-
-            {% if jeu.image_url is defined and jeu.image_url %}
-              <img src="{{ jeu.image_url }}" alt="{{ jeu.title }}" class="game-img">
-            {% else %}
-              <img src="https://placehold.co/600x200?text={{ jeu.title | replace(' ', '+') }}" alt="{{ jeu.title }}" class="game-img">
-            {% endif %}
-
-            <div class="card-body">
-              <h5 class="card-title">{{ jeu.title }}</h5>
-
-              <p class="card-text">
-                <strong>Taille :</strong> {{ jeu.fileSize }}<br>
-                <strong>Date :</strong> {{ jeu.uploadDate }}<br>
-
-                {% set etat = verifications.get(loop.index0|string) %}
-                {% if etat == 'ok' %}
-                  <span class="badge bg-success">✔️ Lien valide</span>
-                {% elif etat == 'hs' %}
-                  <span class="badge bg-danger">❌ Lien cassé</span>
-                {% endif %}
-              </p>
-
-              <a href="{{ jeu.uris[0] }}" class="btn btn-primary" target="_blank">📥 Télécharger</a>
-
-              <div class="d-flex justify-content-between mt-3">
-                <a href="{{ url_for('modifier', index=loop.index0) }}" class="btn btn-warning btn-sm">✏️ Modifier</a>
-
-                <form method="post" action="{{ url_for('verifier', index=loop.index0) }}" class="m-0">
-                  <input type="hidden" name="q" value="{{ recherche }}">
-                  <button type="submit" class="btn btn-info btn-sm">🔍 Vérifier</button>
+    <div class="container">
+        <header>
+            <h1>
+                <form action="{{ url_for('update_library_name') }}" method="post" class="library-name-form">
+                    <input type="text" name="library_name" value="{{ data.name }}" class="library-name-input">
+                    <button type="submit" class="btn-save-name">
+                        <i class="fas fa-save"></i>
+                    </button>
                 </form>
+            </h1>
+        </header>
 
-                <form method="post" action="{{ url_for('supprimer', index=loop.index0) }}" class="m-0"
-                      onsubmit="return confirm('Supprimer ce jeu ?');">
-                  <button type="submit" class="btn btn-danger btn-sm">🗑️ Supprimer</button>
-                </form>
-              </div>
-
+        <!-- Barre de recherche -->
+        <div class="search-section">
+            <form action="{{ url_for('index') }}" method="get" class="search-form">
+                <div class="search-group">
+                    <input type="text" 
+                           name="search" 
+                           placeholder="Rechercher un jeu..." 
+                           value="{{ search_query }}"
+                           class="search-input">
+                    <button type="submit" class="btn-search">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    {% if search_query %}
+                    <a href="{{ url_for('clear_search') }}" class="btn-clear-search" title="Effacer la recherche">
+                        <i class="fas fa-times"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+            {% if search_query %}
+            <div class="search-results-info">
+                <p>
+                    <i class="fas fa-search"></i>
+                    {{ data.downloads|length }} jeu(x) trouvé(s) pour "{{ search_query }}"
+                    <a href="{{ url_for('clear_search') }}" class="show-all-link">
+                        <i class="fas fa-eye"></i> Voir tous les jeux
+                    </a>
+                </p>
             </div>
-
-          </div>
+            {% endif %}
         </div>
-      {% else %}
-        <p class="text-center">Aucun jeu trouvé.</p>
-      {% endfor %}
+
+        <!-- Formulaire d'ajout -->
+        <div class="form-section">
+            <h2><i class="fas fa-plus"></i> Ajouter un jeu</h2>
+            <form action="{{ url_for('add_game') }}" method="post" class="game-form">
+                <div class="form-group">
+                    <input type="text" name="title" placeholder="Nom du jeu" required>
+                </div>
+                <div class="form-group">
+                    <input type="url" name="uri" placeholder="Lien de téléchargement" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" name="fileSize" placeholder="Taille du fichier (ex: 1.5 GB)">
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Ajouter le jeu
+                </button>
+            </form>
+        </div>
+
+        <!-- Liste des jeux -->
+        <div class="games-section">
+            <h2>
+                <i class="fas fa-gamepad"></i> 
+                {% if search_query %}
+                    Résultats de la recherche ({{ data.downloads|length }})
+                {% else %}
+                    Jeux ({{ data.downloads|length }})
+                {% endif %}
+            </h2>
+            
+            {% if data.downloads %}
+            <div class="games-grid">
+                {% for game in data.downloads %}
+                <div class="game-card">
+                    <div class="game-header">
+                        <h3>{{ game.title }}</h3>
+                        <div class="game-actions">
+                            <button class="btn-icon check-url" data-game-id="{{ loop.index0 }}" title="Vérifier le lien">
+                                <i class="fas fa-link"></i>
+                            </button>
+                            <button class="btn-icon edit-btn" data-game-id="{{ loop.index0 }}" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <a href="{{ url_for('delete_game', game_id=loop.index0) }}" class="btn-icon delete-btn" title="Supprimer" onclick="return confirm('Supprimer ce jeu ?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="game-details">
+                        <p><strong>Lien:</strong> 
+                            <a href="{{ game.uris[0] }}" target="_blank" class="download-link">
+                                {{ game.uris[0][:50] }}...
+                            </a>
+                        </p>
+                        <p><strong>Date:</strong> {{ game.uploadDate }}</p>
+                        <p><strong>Taille:</strong> {{ game.fileSize }}</p>
+                    </div>
+
+                    <!-- Formulaire d'édition (caché par défaut) -->
+                    <div class="edit-form" id="edit-form-{{ loop.index0 }}" style="display: none;">
+                        <form action="{{ url_for('edit_game', game_id=loop.index0) }}" method="post" class="game-form">
+                            <div class="form-group">
+                                <input type="text" name="title" value="{{ game.title }}" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="url" name="uri" value="{{ game.uris[0] }}" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" name="fileSize" value="{{ game.fileSize }}">
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> Sauvegarder
+                                </button>
+                                <button type="button" class="btn btn-secondary cancel-edit">
+                                    Annuler
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-gamepad"></i>
+                {% if search_query %}
+                    <p>Aucun jeu trouvé pour "{{ search_query }}"</p>
+                    <a href="{{ url_for('clear_search') }}" class="btn btn-primary">
+                        <i class="fas fa-eye"></i> Voir tous les jeux
+                    </a>
+                {% else %}
+                    <p>Aucun jeu dans la bibliothèque</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
     </div>
-  </div>
+
+    <script>
+        // Gestion de l'édition
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const gameId = this.getAttribute('data-game-id');
+                const editForm = document.getElementById(`edit-form-${gameId}`);
+                editForm.style.display = editForm.style.display === 'none' ? 'block' : 'none';
+            });
+        });
+
+        // Annulation de l'édition
+        document.querySelectorAll('.cancel-edit').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const editForm = this.closest('.edit-form');
+                editForm.style.display = 'none';
+            });
+        });
+
+        // Vérification des URLs
+        document.querySelectorAll('.check-url').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const gameId = this.getAttribute('data-game-id');
+                const originalIcon = this.innerHTML;
+                
+                // Afficher un indicateur de chargement
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                this.disabled = true;
+                
+                try {
+                    const response = await fetch(`/check_url/${gameId}`);
+                    const result = await response.json();
+                    
+                    // Afficher le résultat
+                    alert(result.message);
+                    
+                    // Restaurer l'icône originale après un délai
+                    setTimeout(() => {
+                        this.innerHTML = originalIcon;
+                        this.disabled = false;
+                    }, 1000);
+                    
+                } catch (error) {
+                    alert('Erreur lors de la vérification du lien');
+                    this.innerHTML = originalIcon;
+                    this.disabled = false;
+                }
+            });
+        });
+
+        // Focus sur la barre de recherche au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.querySelector('.search-input');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        });
+    </script>
 </body>
 </html>
