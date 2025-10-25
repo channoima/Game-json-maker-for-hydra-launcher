@@ -9,15 +9,19 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>
+        <!-- Header plus compact -->
+        <header class="compact-header">
+            <div class="header-content">
                 <form action="{{ url_for('update_library_name') }}" method="post" class="library-name-form">
                     <input type="text" name="library_name" value="{{ data.name }}" class="library-name-input">
                     <button type="submit" class="btn-save-name">
                         <i class="fas fa-save"></i>
                     </button>
                 </form>
-            </h1>
+                <div class="header-stats">
+                    <span class="stat"><i class="fas fa-gamepad"></i> {{ data.downloads|length }} jeux</span>
+                </div>
+            </div>
         </header>
 
         <!-- Barre de recherche -->
@@ -78,7 +82,7 @@
                 {% if search_query %}
                     Résultats de la recherche ({{ data.downloads|length }})
                 {% else %}
-                    Jeux ({{ data.downloads|length }})
+                    Tous les jeux ({{ data.downloads|length }})
                 {% endif %}
             </h2>
             
@@ -86,52 +90,66 @@
             <div class="games-grid">
                 {% for game in data.downloads %}
                 <div class="game-card">
-                    <div class="game-header">
-                        <h3>{{ game.title }}</h3>
-                        <div class="game-actions">
-                            <button class="btn-icon check-url" data-game-id="{{ loop.index0 }}" title="Vérifier le lien">
-                                <i class="fas fa-link"></i>
-                            </button>
-                            <button class="btn-icon edit-btn" data-game-id="{{ loop.index0 }}" title="Modifier">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <a href="{{ url_for('delete_game', game_id=loop.index0) }}" class="btn-icon delete-btn" title="Supprimer" onclick="return confirm('Supprimer ce jeu ?')">
-                                <i class="fas fa-trash"></i>
-                            </a>
-                        </div>
+                    <!-- Bannière du jeu -->
+                    {% if game.bannerUrl %}
+                    <div class="game-banner">
+                        <img src="{{ game.bannerUrl }}" alt="{{ game.title }}" onerror="this.style.display='none'">
                     </div>
+                    {% endif %}
                     
-                    <div class="game-details">
-                        <p><strong>Lien:</strong> 
-                            <a href="{{ game.uris[0] }}" target="_blank" class="download-link">
-                                {{ game.uris[0][:50] }}...
-                            </a>
-                        </p>
-                        <p><strong>Date:</strong> {{ game.uploadDate }}</p>
-                        <p><strong>Taille:</strong> {{ game.fileSize }}</p>
-                    </div>
+                    <div class="game-content">
+                        <div class="game-header">
+                            <h3>{{ game.title }}</h3>
+                            <div class="game-actions">
+                                <button class="btn-icon check-url" data-game-id="{{ loop.index0 }}" title="Vérifier le lien">
+                                    <i class="fas fa-link"></i>
+                                </button>
+                                {% if not game.bannerUrl %}
+                                <a href="{{ url_for('refresh_banner', game_id=loop.index0) }}" class="btn-icon refresh-banner" title="Chercher une bannière">
+                                    <i class="fas fa-image"></i>
+                                </a>
+                                {% endif %}
+                                <button class="btn-icon edit-btn" data-game-id="{{ loop.index0 }}" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <a href="{{ url_for('delete_game', game_id=loop.index0) }}" class="btn-icon delete-btn" title="Supprimer" onclick="return confirm('Supprimer ce jeu ?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="game-details">
+                            <p><strong>Lien:</strong> 
+                                <a href="{{ game.uris[0] }}" target="_blank" class="download-link">
+                                    {{ game.uris[0][:50] }}...
+                                </a>
+                            </p>
+                            <p><strong>Date:</strong> {{ game.uploadDate }}</p>
+                            <p><strong>Taille:</strong> {{ game.fileSize }}</p>
+                        </div>
 
-                    <!-- Formulaire d'édition (caché par défaut) -->
-                    <div class="edit-form" id="edit-form-{{ loop.index0 }}" style="display: none;">
-                        <form action="{{ url_for('edit_game', game_id=loop.index0) }}" method="post" class="game-form">
-                            <div class="form-group">
-                                <input type="text" name="title" value="{{ game.title }}" required>
-                            </div>
-                            <div class="form-group">
-                                <input type="url" name="uri" value="{{ game.uris[0] }}" required>
-                            </div>
-                            <div class="form-group">
-                                <input type="text" name="fileSize" value="{{ game.fileSize }}">
-                            </div>
-                            <div class="form-actions">
-                                <button type="submit" class="btn btn-success">
-                                    <i class="fas fa-save"></i> Sauvegarder
-                                </button>
-                                <button type="button" class="btn btn-secondary cancel-edit">
-                                    Annuler
-                                </button>
-                            </div>
-                        </form>
+                        <!-- Formulaire d'édition (caché par défaut) -->
+                        <div class="edit-form" id="edit-form-{{ loop.index0 }}" style="display: none;">
+                            <form action="{{ url_for('edit_game', game_id=loop.index0) }}" method="post" class="game-form">
+                                <div class="form-group">
+                                    <input type="text" name="title" value="{{ game.title }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="url" name="uri" value="{{ game.uris[0] }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" name="fileSize" value="{{ game.fileSize }}">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-save"></i> Sauvegarder
+                                    </button>
+                                    <button type="button" class="btn btn-secondary cancel-edit">
+                                        Annuler
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}

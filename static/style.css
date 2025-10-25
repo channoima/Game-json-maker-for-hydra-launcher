@@ -20,50 +20,72 @@ body {
     overflow: hidden;
 }
 
-header {
+/* Header compact */
+.compact-header {
     background: linear-gradient(135deg, #2c3e50, #34495e);
     color: white;
-    padding: 30px;
-    text-align: center;
+    padding: 15px 30px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .library-name-form {
     display: flex;
-    justify-content: center;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
 }
 
 .library-name-input {
     background: transparent;
     border: 2px solid rgba(255,255,255,0.3);
     color: white;
-    font-size: 2.5em;
+    font-size: 1.5em;
     font-weight: bold;
-    padding: 10px 20px;
-    border-radius: 10px;
+    padding: 8px 15px;
+    border-radius: 8px;
     text-align: center;
     width: auto;
-    min-width: 300px;
+    min-width: 250px;
+    transition: all 0.3s;
 }
 
 .library-name-input:focus {
     outline: none;
     border-color: #3498db;
+    background: rgba(255,255,255,0.1);
 }
 
 .btn-save-name {
     background: #27ae60;
     border: none;
     color: white;
-    padding: 12px 15px;
-    border-radius: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
     cursor: pointer;
     transition: background 0.3s;
 }
 
 .btn-save-name:hover {
     background: #219a52;
+}
+
+.header-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9em;
+    opacity: 0.9;
 }
 
 /* Section recherche */
@@ -247,24 +269,46 @@ h2 {
     background: #7f8c8d;
 }
 
+/* Grille des jeux améliorée */
 .games-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 20px;
+    gap: 25px;
 }
 
 .game-card {
     background: white;
     border: 1px solid #e9ecef;
     border-radius: 12px;
-    padding: 20px;
+    overflow: hidden;
     box-shadow: 0 5px 15px rgba(0,0,0,0.08);
     transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .game-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+.game-banner {
+    height: 160px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.game-banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.game-card:hover .game-banner img {
+    transform: scale(1.05);
+}
+
+.game-content {
+    padding: 20px;
 }
 
 .game-header {
@@ -278,6 +322,8 @@ h2 {
     color: #2c3e50;
     margin: 0;
     flex: 1;
+    font-size: 1.2em;
+    line-height: 1.3;
 }
 
 .game-actions {
@@ -300,6 +346,15 @@ h2 {
     color: #495057;
 }
 
+.refresh-banner {
+    color: #9b59b6;
+}
+
+.refresh-banner:hover {
+    background: #9b59b6;
+    color: white;
+}
+
 .delete-btn {
     color: #e74c3c;
 }
@@ -312,6 +367,7 @@ h2 {
 .game-details p {
     margin: 8px 0;
     color: #495057;
+    font-size: 0.9em;
 }
 
 .download-link {
@@ -362,13 +418,14 @@ h2 {
         grid-template-columns: 1fr;
     }
     
-    .library-name-form {
+    .header-content {
         flex-direction: column;
+        text-align: center;
     }
     
     .library-name-input {
-        font-size: 1.8em;
-        min-width: 250px;
+        font-size: 1.3em;
+        min-width: 200px;
     }
     
     .search-group {
@@ -383,5 +440,9 @@ h2 {
     .btn-search, .btn-clear-search {
         position: static;
         align-self: flex-end;
+    }
+    
+    .game-banner {
+        height: 120px;
     }
 }
