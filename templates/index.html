@@ -3,112 +3,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestionnaire de Jeux</title>
+    <title>Game Library • Hydra Launcher</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <!-- Header plus compact -->
-        <header class="compact-header">
-            <div class="header-content">
-                <form action="{{ url_for('update_library_name') }}" method="post" class="library-name-form">
-                    <input type="text" name="library_name" value="{{ data.name }}" class="library-name-input">
-                    <button type="submit" class="btn-save-name">
-                        <i class="fas fa-save"></i>
-                    </button>
-                </form>
-                <div class="header-stats">
-                    <span class="stat"><i class="fas fa-gamepad"></i> {{ data.downloads|length }} jeux</span>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-gamepad"></i>
+                    <span>GameHub</span>
                 </div>
             </div>
-        </header>
-
-        <!-- Barre de recherche -->
-        <div class="search-section">
-            <form action="{{ url_for('index') }}" method="get" class="search-form">
-                <div class="search-group">
-                    <input type="text" 
-                           name="search" 
-                           placeholder="Rechercher un jeu..." 
-                           value="{{ search_query }}"
-                           class="search-input">
-                    <button type="submit" class="btn-search">
-                        <i class="fas fa-search"></i>
-                    </button>
-                    {% if search_query %}
-                    <a href="{{ url_for('clear_search') }}" class="btn-clear-search" title="Effacer la recherche">
-                        <i class="fas fa-times"></i>
-                    </a>
-                    {% endif %}
-                </div>
-            </form>
-            {% if search_query %}
-            <div class="search-results-info">
-                <p>
-                    <i class="fas fa-search"></i>
-                    {{ data.downloads|length }} jeu(x) trouvé(s) pour "{{ search_query }}"
-                    <a href="{{ url_for('clear_search') }}" class="show-all-link">
-                        <i class="fas fa-eye"></i> Voir tous les jeux
-                    </a>
-                </p>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Formulaire d'ajout -->
-        <div class="form-section">
-            <h2><i class="fas fa-plus"></i> Ajouter un jeu</h2>
-            <form action="{{ url_for('add_game') }}" method="post" class="game-form">
-                <div class="form-group">
-                    <input type="text" name="title" placeholder="Nom du jeu" required>
-                </div>
-                <div class="form-group">
-                    <input type="url" name="uri" placeholder="Lien de téléchargement" required>
-                </div>
-                <div class="form-group">
-                    <input type="text" name="fileSize" placeholder="Taille du fichier (ex: 1.5 GB)">
-                </div>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Ajouter le jeu
-                </button>
-            </form>
-        </div>
-
-        <!-- Liste des jeux -->
-        <div class="games-section">
-            <h2>
-                <i class="fas fa-gamepad"></i> 
-                {% if search_query %}
-                    Résultats de la recherche ({{ data.downloads|length }})
-                {% else %}
-                    Tous les jeux ({{ data.downloads|length }})
-                {% endif %}
-            </h2>
             
-            {% if data.downloads %}
-            <div class="games-grid">
-                {% for game in data.downloads %}
-                <div class="game-card">
-                    <!-- Bannière du jeu -->
-                    {% if game.bannerUrl %}
-                    <div class="game-banner">
-                        <img src="{{ game.bannerUrl }}" alt="{{ game.title }}" onerror="this.style.display='none'">
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active">
+                    <i class="fas fa-th-large"></i>
+                    <span>Bibliothèque</span>
+                </a>
+                <a href="#add-game" class="nav-item">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Ajouter un jeu</span>
+                </a>
+                <div class="nav-stats">
+                    <div class="stat-item">
+                        <i class="fas fa-gamepad"></i>
+                        <span>{{ data.downloads|length }} Jeux</span>
                     </div>
-                    {% endif %}
-                    
-                    <div class="game-content">
-                        <div class="game-header">
-                            <h3>{{ game.title }}</h3>
-                            <div class="game-actions">
-                                <button class="btn-icon check-url" data-game-id="{{ loop.index0 }}" title="Vérifier le lien">
-                                    <i class="fas fa-link"></i>
-                                </button>
-                                {% if not game.bannerUrl %}
-                                <a href="{{ url_for('refresh_banner', game_id=loop.index0) }}" class="btn-icon refresh-banner" title="Chercher une bannière">
-                                    <i class="fas fa-image"></i>
-                                </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <h1>Ma Bibliothèque</h1>
+                    <p>Gérez votre collection de jeux pour Hydra Launcher</p>
+                </div>
+                <div class="header-actions">
+                    <form action="{{ url_for('index') }}" method="get" class="search-box">
+                        <input type="text" 
+                               name="search" 
+                               placeholder="Rechercher un jeu..." 
+                               value="{{ search_query }}"
+                               class="search-input">
+                        <button type="submit" class="search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        {% if search_query %}
+                        <a href="{{ url_for('clear_search') }}" class="clear-search">
+                            <i class="fas fa-times"></i>
+                        </a>
+                        {% endif %}
+                    </form>
+                </div>
+            </header>
+
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-gamepad"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-number">{{ total_games }}</span>
+                        <span class="stat-label">Jeux installés</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-hdd"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-number">{{ total_size }}</span>
+                        <span class="stat-label">Espace utilisé</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-number">{{ verified_games }}</span>
+                        <span class="stat-label">Jeux vérifiés IGDB</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Game Section -->
+            <section id="add-game" class="add-game-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-plus"></i> Ajouter un nouveau jeu</h2>
+                </div>
+                <div class="add-game-card">
+                    <form action="{{ url_for('add_game') }}" method="post" class="add-game-form" id="add-game-form">
+                        <div class="form-row">
+                            <div class="form-group autocomplete-container">
+                                <label for="game-title">Nom du jeu *</label>
+                                <input type="text" 
+                                       id="game-title" 
+                                       name="title" 
+                                       placeholder="Commencez à taper pour voir les suggestions IGDB..." 
+                                       required
+                                       class="autocomplete-input">
+                                <input type="hidden" id="igdb_id" name="igdb_id" value="custom">
+                                <div class="suggestions-container" id="suggestions-container"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="game-uri">Lien de téléchargement *</label>
+                                <input type="url" id="game-uri" name="uri" placeholder="https://example.com/game.zip" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="game-size">Taille du fichier</label>
+                                <input type="text" id="game-size" name="fileSize" placeholder="ex: 1.5 GB">
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <i class="fas fa-plus"></i> Ajouter à la bibliothèque
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Games Grid -->
+            <section class="games-section">
+                <div class="section-header">
+                    <h2>
+                        <i class="fas fa-th-large"></i>
+                        {% if search_query %}
+                            Résultats pour "{{ search_query }}" ({{ data.downloads|length }})
+                        {% else %}
+                            Tous les jeux ({{ data.downloads|length }})
+                        {% endif %}
+                    </h2>
+                    <div class="view-options">
+                        <button class="view-option active" data-view="grid">
+                            <i class="fas fa-th-large"></i>
+                        </button>
+                        <button class="view-option" data-view="list">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+
+                {% if data.downloads %}
+                <div class="games-grid" id="games-view">
+                    {% for game in data.downloads %}
+                    <div class="game-card">
+                        <!-- Game Banner -->
+                        <div class="game-banner">
+                            {% if game.bannerUrl %}
+                            <img src="{{ game.bannerUrl }}" alt="{{ game.title }}" onerror="this.style.display='none'">
+                            {% else %}
+                            <div class="banner-placeholder">
+                                <i class="fas fa-gamepad"></i>
+                            </div>
+                            {% endif %}
+                            <div class="game-overlay">
+                                <div class="game-actions">
+                                    <a href="{{ game.uris[0] }}" target="_blank" class="action-btn download-btn" title="Télécharger">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    <button class="action-btn check-url" data-game-id="{{ loop.index0 }}" title="Vérifier le lien">
+                                        <i class="fas fa-link"></i>
+                                    </button>
+                                    {% if not game.bannerUrl or not game.igdbId %}
+                                    <a href="{{ url_for('refresh_banner', game_id=loop.index0) }}" class="action-btn refresh-btn" title="Chercher bannière">
+                                        <i class="fas fa-image"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Game Info -->
+                        <div class="game-info">
+                            <div class="game-header">
+                                <h3 class="game-title">{{ game.title }}</h3>
+                                {% if game.igdbId %}
+                                <span class="verified-badge" title="Jeu vérifié IGDB">
+                                    <i class="fas fa-check"></i>
+                                </span>
                                 {% endif %}
+                            </div>
+                            
+                            <div class="game-meta">
+                                <span class="meta-item">
+                                    <i class="fas fa-calendar"></i>
+                                    {{ game.uploadDate }}
+                                </span>
+                                {% if game.fileSize %}
+                                <span class="meta-item">
+                                    <i class="fas fa-hdd"></i>
+                                    {{ game.fileSize }}
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="game-actions-bottom">
                                 <button class="btn-icon edit-btn" data-game-id="{{ loop.index0 }}" title="Modifier">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -117,74 +220,277 @@
                                 </a>
                             </div>
                         </div>
-                        
-                        <div class="game-details">
-                            <p><strong>Lien:</strong> 
-                                <a href="{{ game.uris[0] }}" target="_blank" class="download-link">
-                                    {{ game.uris[0][:50] }}...
-                                </a>
-                            </p>
-                            <p><strong>Date:</strong> {{ game.uploadDate }}</p>
-                            <p><strong>Taille:</strong> {{ game.fileSize }}</p>
-                        </div>
-
-                        <!-- Formulaire d'édition (caché par défaut) -->
-                        <div class="edit-form" id="edit-form-{{ loop.index0 }}" style="display: none;">
-                            <form action="{{ url_for('edit_game', game_id=loop.index0) }}" method="post" class="game-form">
-                                <div class="form-group">
-                                    <input type="text" name="title" value="{{ game.title }}" required>
-                                </div>
-                                <div class="form-group">
-                                    <input type="url" name="uri" value="{{ game.uris[0] }}" required>
-                                </div>
-                                <div class="form-group">
-                                    <input type="text" name="fileSize" value="{{ game.fileSize }}">
-                                </div>
-                                <div class="form-actions">
-                                    <button type="submit" class="btn btn-success">
-                                        <i class="fas fa-save"></i> Sauvegarder
-                                    </button>
-                                    <button type="button" class="btn btn-secondary cancel-edit">
-                                        Annuler
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="empty-state">
-                <i class="fas fa-gamepad"></i>
-                {% if search_query %}
-                    <p>Aucun jeu trouvé pour "{{ search_query }}"</p>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-gamepad"></i>
+                    </div>
+                    <h3>Bibliothèque vide</h3>
+                    <p>
+                        {% if search_query %}
+                        Aucun jeu trouvé pour "{{ search_query }}"
+                        {% else %}
+                        Commencez par ajouter votre premier jeu à la bibliothèque
+                        {% endif %}
+                    </p>
+                    {% if search_query %}
                     <a href="{{ url_for('clear_search') }}" class="btn btn-primary">
                         <i class="fas fa-eye"></i> Voir tous les jeux
                     </a>
-                {% else %}
-                    <p>Aucun jeu dans la bibliothèque</p>
+                    {% else %}
+                    <a href="#add-game" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Ajouter un jeu
+                    </a>
+                    {% endif %}
+                </div>
                 {% endif %}
+            </section>
+        </main>
+    </div>
+
+    <!-- Edit Form Overlay (placé en dehors du main content) -->
+    <div class="edit-form-overlay" id="edit-form-overlay" style="display: none;">
+        <div class="edit-form-container">
+            <div class="edit-form-header">
+                <h3>Modifier le jeu</h3>
+                <button class="close-edit-form" id="close-edit-form">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            {% endif %}
+            <form id="edit-game-form" method="post" class="edit-game-form">
+                <input type="hidden" id="edit-game-id" name="game_id">
+                <div class="form-group autocomplete-container">
+                    <label>Nom du jeu *</label>
+                    <input type="text" 
+                           id="edit-game-title"
+                           name="title" 
+                           placeholder="Nom du jeu"
+                           required
+                           class="autocomplete-input">
+                    <input type="hidden" id="edit-igdb-id" name="igdb_id" value="custom">
+                    <div class="suggestions-container" id="edit-suggestions-container"></div>
+                </div>
+                <div class="form-group">
+                    <label>Lien de téléchargement *</label>
+                    <input type="url" id="edit-game-uri" name="uri" placeholder="Lien de téléchargement" required>
+                </div>
+                <div class="form-group">
+                    <label>Taille du fichier</label>
+                    <input type="text" id="edit-game-size" name="fileSize" placeholder="Taille du fichier">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="cancel-edit">
+                        Annuler
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script>
-        // Gestion de l'édition
-        document.querySelectorAll('.edit-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const gameId = this.getAttribute('data-game-id');
-                const editForm = document.getElementById(`edit-form-${gameId}`);
-                editForm.style.display = editForm.style.display === 'none' ? 'block' : 'none';
+        // Setup autocomplete
+        function setupAutocomplete(inputElement, hiddenIdElement) {
+            let currentFocus = -1;
+            let currentSuggestions = [];
+
+            inputElement.addEventListener('input', async function(e) {
+                const query = this.value;
+                const suggestionsContainer = this.parentNode.querySelector('.suggestions-container');
+                
+                if (query.length < 2) {
+                    suggestionsContainer.innerHTML = '';
+                    suggestionsContainer.style.display = 'none';
+                    hiddenIdElement.value = 'custom';
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/search_games?q=${encodeURIComponent(query)}`);
+                    const suggestions = await response.json();
+                    currentSuggestions = suggestions;
+
+                    suggestionsContainer.innerHTML = '';
+                    
+                    if (suggestions.length > 0) {
+                        suggestions.forEach((suggestion, index) => {
+                            const div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.innerHTML = `
+                                ${suggestion.cover_url ? 
+                                    `<img src="${suggestion.cover_url}" alt="${suggestion.name}" class="suggestion-cover">` : 
+                                    '<div class="suggestion-cover placeholder"><i class="fas fa-gamepad"></i></div>'
+                                }
+                                <div class="suggestion-info">
+                                    <div class="suggestion-title">${suggestion.name}</div>
+                                    ${suggestion.release_year ? 
+                                        `<div class="suggestion-year">${suggestion.release_year}</div>` : ''
+                                    }
+                                </div>
+                            `;
+                            div.addEventListener('click', function() {
+                                inputElement.value = suggestion.name;
+                                hiddenIdElement.value = suggestion.id;
+                                suggestionsContainer.innerHTML = '';
+                                suggestionsContainer.style.display = 'none';
+                            });
+                            suggestionsContainer.appendChild(div);
+                        });
+
+                        const customDiv = document.createElement('div');
+                        customDiv.className = 'suggestion-item custom-suggestion';
+                        customDiv.innerHTML = `
+                            <div class="suggestion-cover placeholder custom">
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <div class="suggestion-info">
+                                <div class="suggestion-title">Utiliser "${query}"</div>
+                                <div class="suggestion-year">Nom personnalisé</div>
+                            </div>
+                        `;
+                        customDiv.addEventListener('click', function() {
+                            hiddenIdElement.value = 'custom';
+                            suggestionsContainer.innerHTML = '';
+                            suggestionsContainer.style.display = 'none';
+                        });
+                        suggestionsContainer.appendChild(customDiv);
+
+                        suggestionsContainer.style.display = 'block';
+                    } else {
+                        suggestionsContainer.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Erreur de recherche:', error);
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!inputElement.parentNode.contains(e.target)) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+
+            inputElement.addEventListener('keydown', function(e) {
+                const items = suggestionsContainer.querySelectorAll('.suggestion-item');
+                
+                if (e.key === 'ArrowDown') {
+                    currentFocus++;
+                    e.preventDefault();
+                } else if (e.key === 'ArrowUp') {
+                    currentFocus--;
+                    e.preventDefault();
+                } else if (e.key === 'Enter' && currentFocus > -1) {
+                    e.preventDefault();
+                    items[currentFocus].click();
+                }
+
+                items.forEach(item => item.classList.remove('suggestion-active'));
+                if (currentFocus >= 0 && currentFocus < items.length) {
+                    items[currentFocus].classList.add('suggestion-active');
+                }
+            });
+        }
+
+        // Initialize autocomplete
+        document.addEventListener('DOMContentLoaded', function() {
+            const titleInput = document.getElementById('game-title');
+            const igdbIdInput = document.getElementById('igdb_id');
+            
+            if (titleInput && igdbIdInput) {
+                setupAutocomplete(titleInput, igdbIdInput);
+            }
+
+            // Autocomplete pour le formulaire d'édition
+            const editTitleInput = document.getElementById('edit-game-title');
+            const editIgdbIdInput = document.getElementById('edit-igdb-id');
+            
+            if (editTitleInput && editIgdbIdInput) {
+                setupAutocomplete(editTitleInput, editIgdbIdInput);
+            }
+
+            // View toggle
+            const viewOptions = document.querySelectorAll('.view-option');
+            const gamesView = document.getElementById('games-view');
+            
+            viewOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    viewOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    gamesView.className = 'games-' + this.dataset.view;
+                });
+            });
+
+            // Smooth scroll for nav links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
             });
         });
 
-        // Annulation de l'édition
-        document.querySelectorAll('.cancel-edit').forEach(btn => {
+        // Gestion de l'édition - NOUVELLE VERSION
+        document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                const editForm = this.closest('.edit-form');
-                editForm.style.display = 'none';
+                const gameId = this.getAttribute('data-game-id');
+                
+                // Récupérer les données du jeu
+                const gameCard = this.closest('.game-card');
+                const gameTitle = gameCard.querySelector('.game-title').textContent;
+                const gameUri = gameCard.querySelector('.download-btn').href;
+                const gameSize = gameCard.querySelector('.meta-item:nth-child(2)')?.textContent.replace('', '').trim() || '';
+                
+                // Remplir le formulaire d'édition
+                document.getElementById('edit-game-id').value = gameId;
+                document.getElementById('edit-game-title').value = gameTitle;
+                document.getElementById('edit-game-uri').value = gameUri;
+                document.getElementById('edit-game-size').value = gameSize;
+                
+                // Afficher l'overlay
+                document.getElementById('edit-form-overlay').style.display = 'flex';
+            });
+        });
+
+        // Fermer l'overlay d'édition
+        document.getElementById('close-edit-form').addEventListener('click', function() {
+            document.getElementById('edit-form-overlay').style.display = 'none';
+        });
+
+        document.getElementById('cancel-edit').addEventListener('click', function() {
+            document.getElementById('edit-form-overlay').style.display = 'none';
+        });
+
+        // Soumission du formulaire d'édition
+        document.getElementById('edit-game-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const gameId = document.getElementById('edit-game-id').value;
+            const formData = new FormData(this);
+            
+            fetch(`/edit/${gameId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showNotification('Erreur lors de la modification du jeu', 'error');
             });
         });
 
@@ -194,7 +500,6 @@
                 const gameId = this.getAttribute('data-game-id');
                 const originalIcon = this.innerHTML;
                 
-                // Afficher un indicateur de chargement
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 this.disabled = true;
                 
@@ -202,28 +507,51 @@
                     const response = await fetch(`/check_url/${gameId}`);
                     const result = await response.json();
                     
-                    // Afficher le résultat
-                    alert(result.message);
+                    // Notification toast
+                    showNotification(result.message, result.valid ? 'success' : 'error');
                     
-                    // Restaurer l'icône originale après un délai
                     setTimeout(() => {
                         this.innerHTML = originalIcon;
                         this.disabled = false;
                     }, 1000);
                     
                 } catch (error) {
-                    alert('Erreur lors de la vérification du lien');
+                    showNotification('Erreur lors de la vérification du lien', 'error');
                     this.innerHTML = originalIcon;
                     this.disabled = false;
                 }
             });
         });
 
-        // Focus sur la barre de recherche au chargement
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.querySelector('.search-input');
-            if (searchInput) {
-                searchInput.focus();
+        // Notification system
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Fermer l'overlay en cliquant à l'extérieur
+        document.getElementById('edit-form-overlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
             }
         });
     </script>

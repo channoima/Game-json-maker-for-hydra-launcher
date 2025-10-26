@@ -6,6 +6,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 import base64
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
@@ -41,26 +42,59 @@ def get_igdb_access_token():
         print(f"❌ Erreur lors de l'obtention du token IGDB: {e}")
         return None
 
-def search_igdb_game(game_name):
-    """Recherche un jeu sur IGDB et retourne l'URL de la bannière"""
+def calculate_total_size(games_data):
+    """Calcule la taille totale des jeux en GB"""
+    total_gb = 0
+    
+    for game in games_data['downloads']:
+        if game.get('fileSize'):
+            size_str = game['fileSize'].lower().strip()
+            
+            # Extraire le nombre et l'unité
+            match = re.search(r'([\d.]+)\s*(gb|mb|kb|b)', size_str)
+            if match:
+                number = float(match.group(1))
+                unit = match.group(2)
+                
+                # Convertir en GB
+                if unit == 'gb':
+                    total_gb += number
+                elif unit == 'mb':
+                    total_gb += number / 1024
+                elif unit == 'kb':
+                    total_gb += number / (1024 * 1024)
+                elif unit == 'b':
+                    total_gb += number / (1024 * 1024 * 1024)
+    
+    return total_gb
+
+def count_verified_games(games_data):
+    """Compte le nombre de jeux vérifiés IGDB"""
+    verified_count = 0
+    for game in games_data['downloads']:
+        if game.get('igdbId') and game['igdbId'] != 'custom':
+            verified_count += 1
+    return verified_count
+
+def search_igdb_games(game_name, limit=10):
+    """Recherche des jeux sur IGDB et retourne une liste de suggestions"""
     if not IGDB_ACCESS_TOKEN:
         get_igdb_access_token()
     
     if not IGDB_ACCESS_TOKEN:
-        return None
+        return []
     
     try:
-        # Requête à l'API IGDB
         headers = {
             'Client-ID': IGDB_CLIENT_ID,
             'Authorization': f'Bearer {IGDB_ACCESS_TOKEN}'
         }
         
-        # Query pour rechercher le jeu
+        # Query pour rechercher les jeux
         query = f'''
-        fields name, cover.url, cover.image_id;
+        fields name, cover.url, cover.image_id, first_release_date;
         search "{game_name}";
-        limit 1;
+        limit {limit};
         '''
         
         response = requests.post(
@@ -71,18 +105,72 @@ def search_igdb_game(game_name):
         response.raise_for_status()
         
         games = response.json()
+        suggestions = []
         
+        for game in games:
+            cover_url = None
+            if 'cover' in game and game['cover']:
+                cover_url = game['cover']['url'].replace('t_thumb', 't_cover_small')
+                cover_url = f"https:{cover_url}"
+            
+            # Formater la date de sortie
+            release_date = None
+            if 'first_release_date' in game and game['first_release_date']:
+                release_timestamp = game['first_release_date']
+                release_date = datetime.fromtimestamp(release_timestamp).strftime('%Y')
+            
+            suggestions.append({
+                'id': game['id'],
+                'name': game['name'],
+                'cover_url': cover_url,
+                'release_year': release_date
+            })
+        
+        return suggestions
+        
+    except Exception as e:
+        print(f"❌ Erreur lors de la recherche IGDB pour {game_name}: {e}")
+        return []
+
+def search_igdb_game_by_id(game_id):
+    """Recherche un jeu spécifique par son ID IGDB"""
+    if not IGDB_ACCESS_TOKEN:
+        get_igdb_access_token()
+    
+    if not IGDB_ACCESS_TOKEN:
+        return None
+    
+    try:
+        headers = {
+            'Client-ID': IGDB_CLIENT_ID,
+            'Authorization': f'Bearer {IGDB_ACCESS_TOKEN}'
+        }
+        
+        query = f'''
+        fields name, cover.url, cover.image_id;
+        where id = {game_id};
+        '''
+        
+        response = requests.post(
+            'https://api.igdb.com/v4/games',
+            headers=headers,
+            data=query
+        )
+        response.raise_for_status()
+        
+        games = response.json()
         if games and 'cover' in games[0] and games[0]['cover']:
-            # Récupérer l'URL de l'image en haute résolution
             cover_url = games[0]['cover']['url']
-            # Convertir l'URL pour obtenir une image plus grande
             large_cover_url = cover_url.replace('t_thumb', 't_cover_big')
-            return f"https:{large_cover_url}"
+            return {
+                'name': games[0]['name'],
+                'banner_url': f"https:{large_cover_url}"
+            }
         
         return None
         
     except Exception as e:
-        print(f"❌ Erreur lors de la recherche IGDB pour {game_name}: {e}")
+        print(f"❌ Erreur lors de la recherche IGDB par ID {game_id}: {e}")
         return None
 
 def load_games():
@@ -91,7 +179,6 @@ def load_games():
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
     else:
-        # Structure par défaut
         return {
             "name": "MA BIBLIOTHÈQUE DE JEUX",
             "downloads": []
@@ -109,17 +196,6 @@ def check_url(url):
         return response.status_code == 200
     except:
         return False
-
-def format_file_size(size_bytes):
-    """Formate la taille du fichier en unités lisibles"""
-    if not size_bytes:
-        return "Inconnu"
-    
-    for unit in ['B', 'KB', 'MB', 'GB']:
-        if size_bytes < 1024.0:
-            return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024.0
-    return f"{size_bytes:.1f} TB"
 
 def search_games(query, games_data):
     """Recherche des jeux par titre"""
@@ -141,14 +217,46 @@ def index():
     data = load_games()
     search_query = request.args.get('search', '')
     
+    # Calculer les statistiques
+    total_size_gb = calculate_total_size(data)
+    verified_count = count_verified_games(data)
+    total_games = len(data['downloads'])
+    
+    # Formater la taille totale
+    if total_size_gb >= 1:
+        total_size_display = f"{total_size_gb:.1f} GB"
+    else:
+        total_size_mb = total_size_gb * 1024
+        total_size_display = f"{total_size_mb:.1f} MB"
+    
     if search_query:
         filtered_games = search_games(search_query, data)
-        # Créer une copie des données avec les jeux filtrés
         filtered_data = data.copy()
         filtered_data['downloads'] = filtered_games
-        return render_template('index.html', data=filtered_data, search_query=search_query)
+        
+        # Recalculer pour les résultats filtrés
+        total_size_gb_filtered = calculate_total_size(filtered_data)
+        verified_count_filtered = count_verified_games(filtered_data)
+        
+        if total_size_gb_filtered >= 1:
+            total_size_display = f"{total_size_gb_filtered:.1f} GB"
+        else:
+            total_size_mb = total_size_gb_filtered * 1024
+            total_size_display = f"{total_size_mb:.1f} MB"
+        
+        return render_template('index.html', 
+                             data=filtered_data, 
+                             search_query=search_query,
+                             total_games=len(filtered_games),
+                             total_size=total_size_display,
+                             verified_games=verified_count_filtered)
     
-    return render_template('index.html', data=data, search_query=search_query)
+    return render_template('index.html', 
+                         data=data, 
+                         search_query=search_query,
+                         total_games=total_games,
+                         total_size=total_size_display,
+                         verified_games=verified_count)
 
 @app.route('/add', methods=['POST'])
 def add_game():
@@ -158,17 +266,28 @@ def add_game():
     title = request.form.get('title')
     uri = request.form.get('uri')
     file_size = request.form.get('fileSize', '')
+    igdb_id = request.form.get('igdb_id')
     
     if title and uri:
-        # Rechercher la bannière sur IGDB
-        banner_url = search_igdb_game(title)
+        banner_url = None
+        
+        # Si un ID IGDB est fourni, utiliser les données officielles
+        if igdb_id and igdb_id != 'custom':
+            igdb_data = search_igdb_game_by_id(igdb_id)
+            if igdb_data:
+                title = igdb_data['name']  # Utiliser le nom officiel
+                banner_url = igdb_data['banner_url']
+        else:
+            # Rechercher la bannière pour le nom personnalisé
+            banner_url = search_igdb_game_by_id(None)  # Cette fonction sera ajustée
         
         new_game = {
             "title": title,
             "uris": [uri],
             "uploadDate": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "fileSize": file_size,
-            "bannerUrl": banner_url  # Ajouter l'URL de la bannière
+            "bannerUrl": banner_url,
+            "igdbId": igdb_id if igdb_id != 'custom' else None
         }
         data['downloads'].append(new_game)
         save_games(data)
@@ -184,17 +303,30 @@ def edit_game(game_id):
         title = request.form.get('title')
         uri = request.form.get('uri')
         file_size = request.form.get('fileSize', '')
+        igdb_id = request.form.get('igdb_id')
         
         if title and uri:
-            # Rechercher une nouvelle bannière si le titre a changé
-            if title != data['downloads'][game_id]['title']:
-                banner_url = search_igdb_game(title)
-                data['downloads'][game_id]['bannerUrl'] = banner_url
+            banner_url = None
+            
+            # Si un ID IGDB est fourni, utiliser les données officielles
+            if igdb_id and igdb_id != 'custom':
+                igdb_data = search_igdb_game_by_id(igdb_id)
+                if igdb_data:
+                    title = igdb_data['name']
+                    banner_url = igdb_data['banner_url']
+            else:
+                # Rechercher une nouvelle bannière si le titre a changé
+                if title != data['downloads'][game_id]['title']:
+                    igdb_data = search_igdb_game_by_id(None)
+                    if igdb_data:
+                        banner_url = igdb_data['banner_url']
             
             data['downloads'][game_id]['title'] = title
             data['downloads'][game_id]['uris'] = [uri]
             data['downloads'][game_id]['fileSize'] = file_size
             data['downloads'][game_id]['uploadDate'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            data['downloads'][game_id]['bannerUrl'] = banner_url
+            data['downloads'][game_id]['igdbId'] = igdb_id if igdb_id != 'custom' else None
             
             save_games(data)
     
@@ -251,13 +383,28 @@ def refresh_banner(game_id):
     
     if 0 <= game_id < len(data['downloads']):
         game = data['downloads'][game_id]
-        banner_url = search_igdb_game(game['title'])
-        data['downloads'][game_id]['bannerUrl'] = banner_url
-        save_games(data)
+        # Rechercher le jeu par son titre actuel
+        suggestions = search_igdb_games(game['title'], limit=1)
+        if suggestions:
+            igdb_data = search_igdb_game_by_id(suggestions[0]['id'])
+            if igdb_data:
+                data['downloads'][game_id]['bannerUrl'] = igdb_data['banner_url']
+                data['downloads'][game_id]['title'] = igdb_data['name']
+                data['downloads'][game_id]['igdbId'] = suggestions[0]['id']
+                save_games(data)
     
     return redirect(url_for('index'))
 
+@app.route('/api/search_games')
+def api_search_games():
+    """API pour la recherche de jeux IGDB"""
+    query = request.args.get('q', '')
+    if len(query) < 2:
+        return jsonify([])
+    
+    suggestions = search_igdb_games(query, limit=10)
+    return jsonify(suggestions)
+
 if __name__ == '__main__':
-    # Obtenir le token IGDB au démarrage
     get_igdb_access_token()
     app.run(debug=True, host='0.0.0.0', port=5000)
